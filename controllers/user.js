@@ -3,8 +3,14 @@ const axios = require("axios");
 const userdb = require("../models/profile");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
+const AWS = require("aws-sdk");
 const refreshTokendb = require("../models/refreshToken");
-//=========================================== user login =================================================//
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ID,
+  secretAccessKey: process.env.AWS_SECRET,
+  Bucket: process.env.BUCKET_NAME,
+});
+//=========================================== user login ===========================================//
 exports.sendOTP = (req, res) => {
   try {
     const { body } = req;
@@ -31,7 +37,7 @@ exports.sendOTP = (req, res) => {
     return res.status(500).send({ message: er.name });
   }
 };
-///========================================== verify otp =================================================//
+///========================================== verify otp ===========================================//
 exports.verifyOTP = async (req, res) => {
   try {
     const { body } = req;
@@ -112,7 +118,7 @@ exports.verifyOTP = async (req, res) => {
     return res.status(500).send({ message: e.name });
   }
 };
-//============================================== refresh token ======================================//
+//============================================== refresh token =====================================//
 exports.refreshToken = async (req, res) => {
   try {
     const myRefreshToken = uuidv4();
@@ -136,7 +142,7 @@ exports.refreshToken = async (req, res) => {
     return res.status(500).send({ message: e.name });
   }
 };
-//============================================= get profile ===========================================//
+//============================================= get profile ========================================//
 exports.getProfile = async (req, res) => {
   try {
     const userProfile = await userdb.findOne({ userId: req.user._id });
@@ -148,7 +154,7 @@ exports.getProfile = async (req, res) => {
     res.status(500).send({ message: e.name });
   }
 };
-//========================================== update profile ==============================================//
+//========================================== update profile ========================================//
 exports.updateProfile = async (req, res) => {
   try {
     let date = new Date();
@@ -184,4 +190,90 @@ exports.updateProfile = async (req, res) => {
     res.status(500).send({ message: e.name });
   }
 };
-//================================= upload profile picture ========================================//
+//================================= upload profile picture =========================================//
+exports.uploadProfilePicture = async (req, res) => {
+  try {
+    console.log("sdmmkkkkkk");
+    const fileName = req.file.originalname.split(".");
+    const mimeType = fileName[fileName.length - 1];
+    const params = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: `${uuidv4()}.${mimeType}`,
+      Body: req.file.buffer,
+    };
+    s3.upload(params, async (error, data) => {
+      if (error) {
+        return res.status(500).send(error);
+      } else {
+        const result = await userdb.findByIdAndUpdate(req.user._id, {
+          profilePicture: data.Location,
+        });
+        if (result) {
+          res.status(200).send({ message: "Uploading done" });
+        } else {
+          res.status(500).send({ message: "Something bad happened" });
+        }
+      }
+    });
+  } catch (e) {
+    res.status(500).send({ message: e.name });
+  }
+};
+//=================================== update profile picture =======================================//
+exports.updateProfilePicture = async (req, res) => {
+  try {
+    let fileName = req.file.originalname.split(".");
+    const mimeType = fileName[fileName.length - 1];
+    const params = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: `${uuidv4()}.${mimeType}`,
+      Body: req.file.buffer,
+    };
+    s3.upload(params, async (error, dataResult) => {
+      if (error) {
+        return res.status(500).send(error);
+      }
+      let key = req.body.profileUrl;
+      if (key) {
+        key = key.split("/");
+        key = key[key.length - 1];
+        const params = {
+          Bucket: process.env.AWS_BUCKET_NAME,
+          Key: key,
+        };
+        const s3delete = function (params) {
+          return new Promise((resolve, reject) => {
+            s3.createBucket(
+              {
+                Bucket: params.Bucket,
+              },
+              function () {
+                s3.deleteObject(params, async function (err, data) {
+                  if (err) return res.status(500).send({ message: err });
+                  const result = await userdb.findByIdAndUpdate(req.user._id, {
+                    profilePicture: dataResult.Location,
+                  });
+                  if (result) {
+                    return res.status(200).send({
+                      message: "Profile picture updated successfully",
+                    });
+                  }
+                  return res
+                    .status(500)
+                    .send({ message: "Something bad happened" });
+                });
+              }
+            );
+          });
+        };
+        s3delete(params);
+      } else {
+        return res
+          .status(400)
+          .send({ message: "Please provide profile picture url" });
+      }
+    });
+  } catch (e) {
+    return res.status(500).send({ message: e.name });
+  }
+};

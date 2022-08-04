@@ -16,7 +16,7 @@ const userProfileSchema = new Schema(
     aboutMe: {
       type: String,
     },
-    profilePic: {
+    profilePicture: {
       type: String,
     },
     phone: {
