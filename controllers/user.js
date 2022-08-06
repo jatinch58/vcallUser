@@ -332,6 +332,7 @@ exports.requestHost = async (req, res) => {
         body.backPicture = backData.Location;
         body.frontPicture = frontData.Location;
         body.formBy = req.user._id;
+        body.requestStatus = "pending";
         const formSchema = new hostFormdb(body);
         formSchema
           .save()
@@ -347,6 +348,7 @@ exports.requestHost = async (req, res) => {
     return res.status(500).send({ message: "Something went wrong" });
   }
 };
+//==================================== to know request status ========================================//
 exports.getHostRequest = async (req, res) => {
   try {
     const result = await hostFormdb.findOne({ formBy: req.user._id });

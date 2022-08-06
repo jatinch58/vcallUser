@@ -40,5 +40,9 @@ const hostFormSchema = new Schema({
     type: Boolean,
     required: true,
   },
+  requestStatus: {
+    type: String,
+    required: true,
+  },
 });
 module.exports = model("hostform", hostFormSchema);
