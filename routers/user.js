@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const user = require("../controllers/user");
 const { verifyToken } = require("../middlewares/auth");
-const { upload } = require("../middlewares/upload");
+const { upload, uploadForm } = require("../middlewares/upload");
 router.post("/user/sendOTP", user.sendOTP);
 router.post("/user/verifyOTP", user.verifyOTP);
 router.get("/user/refreshToken/:refreshToken", verifyToken, user.refreshToken);
@@ -20,5 +20,6 @@ router.put(
   upload,
   user.updateProfilePicture
 );
-
+router.post("/user/hostForm", verifyToken, uploadForm, user.requestHost);
+router.get("/user/hostForm", verifyToken, user.getHostRequest);
 module.exports = router;

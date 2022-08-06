@@ -5,12 +5,11 @@ const storage = multer.memoryStorage({
   },
 });
 exports.upload = multer({ storage }).single("image");
-// const upload = multer({ storage });
-// exports.formUpload = upload.fields([
-//   { name: "prescription", maxCount: 1 },
-//   { name: "idProof", maxCount: 1 },
-//   { name: "insurance", maxCount: 1 },
-// ]);
+const upload = multer({ storage });
+exports.uploadForm = upload.fields([
+  { name: "frontPicture", maxCount: 1 },
+  { name: "backPicture", maxCount: 1 },
+]);
 // exports.formUpload1 = upload.fields([
 //   { name: "prescription", maxCount: 1 },
 //   { name: "idProof", maxCount: 1 },
