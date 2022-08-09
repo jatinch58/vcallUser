@@ -277,7 +277,7 @@ exports.updateProfilePicture = async (req, res) => {
   }
 };
 //=================================== request to be host ===========================================//
-exports.requestHost = async (req, res) => {
+exports.requestHostUsingAadhaar = async (req, res) => {
   try {
     const { body } = req;
     let date = new Date();
@@ -298,7 +298,6 @@ exports.requestHost = async (req, res) => {
         phone: Joi.string()
           .regex(/^[6-9]{1}[0-9]{9}$/)
           .required(),
-        document: Joi.string().valid("aadhaar", "pan").required(),
         acknowledge: Joi.boolean().required(),
       })
       .required()
@@ -332,6 +331,7 @@ exports.requestHost = async (req, res) => {
         body.backPicture = backData.Location;
         body.frontPicture = frontData.Location;
         body.formBy = req.user._id;
+        body.document = "aadhaar";
         body.requestStatus = "pending";
         const formSchema = new hostFormdb(body);
         formSchema
@@ -358,5 +358,64 @@ exports.getHostRequest = async (req, res) => {
     return res.status(404).send({ message: "Not found" });
   } catch (e) {
     return res.status(500).send({ message: e.name });
+  }
+};
+//===================================== request using pan ===========================================//
+exports.requestHostUsingPan = async (req, res) => {
+  try {
+    const { body } = req;
+    let date = new Date();
+    date =
+      date.getMonth() +
+      1 +
+      "-" +
+      date.getDate() +
+      "-" +
+      (date.getFullYear() - 18);
+
+    const requestSchema = Joi.object()
+      .keys({
+        firstName: Joi.string().required(),
+        lastName: Joi.string().required(),
+        dob: Joi.date().less(date).required(),
+        email: Joi.string().email().required(),
+        phone: Joi.string()
+          .regex(/^[6-9]{1}[0-9]{9}$/)
+          .required(),
+        acknowledge: Joi.boolean().required(),
+      })
+      .required()
+      .unknown();
+    const result = requestSchema.validate(body);
+    if (result.error) {
+      return res.status(400).send({ message: result.error.details[0].message });
+    }
+    let frontPicture = req.files.frontPicture[0].originalname.split(".");
+    const frontMimeType = frontPicture[frontPicture.length - 1];
+    const frontPictureParams = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: `${uuidv4()}.${frontMimeType}`,
+      Body: req.files.frontPicture[0].buffer,
+    };
+    s3.upload(frontPictureParams, async (error, frontData) => {
+      if (error) {
+        return res.status(500).send(error);
+      }
+      body.frontPicture = frontData.Location;
+      body.formBy = req.user._id;
+      body.document = "PAN";
+      body.requestStatus = "pending";
+      const formSchema = new hostFormdb(body);
+      formSchema
+        .save()
+        .then(() => {
+          return res.status(200).send({ message: "Form submitted" });
+        })
+        .catch((e) => {
+          return res.status(500).send(e);
+        });
+    });
+  } catch (e) {
+    return res.status(500).send({ message: "Something went wrong" });
   }
 };

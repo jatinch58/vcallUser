@@ -30,11 +30,9 @@ const hostFormSchema = new Schema({
   },
   frontPicture: {
     type: String,
-    required: true,
   },
   backPicture: {
     type: String,
-    required: true,
   },
   acknowledge: {
     type: Boolean,
