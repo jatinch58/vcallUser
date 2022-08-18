@@ -4,6 +4,12 @@ const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const hostdb = require("../models/host");
 const refreshTokendb = require("../models/refreshToken");
+const AWS = require("aws-sdk");
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ID,
+  secretAccessKey: process.env.AWS_SECRET,
+  Bucket: process.env.BUCKET_NAME,
+});
 //=============================================== send OTP =============================================//
 exports.sendOTP = async (req, res) => {
   try {
@@ -116,13 +122,15 @@ exports.updateProfile = async (req, res) => {
       date.getDate() +
       "-" +
       (date.getFullYear() - 18);
-    const profileSchema = Joi.object().keys({
-      firstName: Joi.string().required(),
-      lastName: Joi.string().required(),
-      dob: Joi.date().less(date).required(),
-      city: Joi.string().required(),
-      aboutMe: Joi.string().required(),
-    });
+    const profileSchema = Joi.object()
+      .keys({
+        firstName: Joi.string().required(),
+        lastName: Joi.string().required(),
+        dob: Joi.date().less(date).required(),
+        city: Joi.string().required(),
+        aboutMe: Joi.string().required(),
+      })
+      .required();
     const result = profileSchema.validate(body);
     if (result.error) {
       return res.status(400).send({ message: result.error.details[0].message });
@@ -134,5 +142,57 @@ exports.updateProfile = async (req, res) => {
     return res.status(200).send({ message: "Updated successfully" });
   } catch (e) {
     return res.status(500).send({ message: "Something went wrong" });
+  }
+};
+//==================================== update host's online status ==================================//
+exports.updateOnlineStatus = async (req, res) => {
+  try {
+    const { body } = req;
+    const joiValidation = Joi.object()
+      .keys({
+        onlineStatus: Joi.boolean().required(),
+      })
+      .required();
+    const isValidated = joiValidation.validate(body);
+    if (isValidated.error) {
+      return res
+        .status(400)
+        .send({ message: isValidated.error.details[0].message });
+    }
+    const result = await hostdb.findByIdAndUpdate(req.user._id, {
+      onlineStatus: body.onlineStatus,
+    });
+    if (!result) {
+      return res.status(500).send({ message: "Something went wrong" });
+    }
+    return res.status(200).send({ message: "Updated Sucessfully" });
+  } catch (e) {
+    return res.status(500).send({ message: "Something went wrong" });
+  }
+};
+//=================================== upload pictures ==============================================//
+exports.uploadPictures = async (req, res) => {
+  try {
+    const fileName = req.file.originalname.split(".");
+    const mimeType = fileName[fileName.length - 1];
+    const params = {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: `${uuidv4()}.${mimeType}`,
+      Body: req.file.buffer,
+    };
+    s3.upload(params, async (error, data) => {
+      if (error) {
+        return res.status(500).send(error);
+      }
+      const result = await hostdb.findByIdAndUpdate(req.user._id, {
+        $push: { pictures: data.Location },
+      });
+      if (result) {
+        return res.status(200).send({ message: "Uploading done" });
+      }
+      return res.status(500).send({ message: "Something bad happened" });
+    });
+  } catch (e) {
+    return res.status(500).send({ message: e.name });
   }
 };

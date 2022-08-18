@@ -2,13 +2,11 @@ const express = require("express");
 const router = express.Router();
 const host = require("../controllers/host");
 const { verifyToken } = require("../middlewares/auth");
-const {
-  upload,
-  uploadAadhaarForm,
-  uploadPanForm,
-} = require("../middlewares/upload");
+const { upload } = require("../middlewares/upload");
 router.post("/host/sendOTP", host.sendOTP);
 router.post("/host/verifyOTP", host.verifyOTP);
 router.get("/host/profile", verifyToken, host.showProfile);
 router.put("/host/profile", verifyToken, host.updateProfile);
+router.put("/host/onlineStatus", verifyToken, host.updateOnlineStatus);
+router.post("/host/pictures", verifyToken, upload, host.uploadPictures);
 module.exports = router;

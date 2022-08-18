@@ -24,6 +24,10 @@ const hostSchema = new Schema({
     type: String,
     required: true,
   },
+  onlineStatus: {
+    type: Boolean,
+    default: true,
+  },
   pictures: [
     {
       type: String,
