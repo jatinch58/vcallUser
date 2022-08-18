@@ -36,5 +36,5 @@ router.post(
   uploadPanForm,
   user.requestHostUsingPan
 );
-router.get("/user/hostForm", verifyToken, user.getHostRequest);
+router.get("/user/hostForm", verifyToken, user.getHostRequestStatus);
 module.exports = router;

@@ -145,7 +145,7 @@ exports.refreshToken = async (req, res) => {
 //============================================= get profile ========================================//
 exports.getProfile = async (req, res) => {
   try {
-    const userProfile = await userdb.findOne({ userId: req.user._id });
+    const userProfile = await userdb.findById(req.user._id);
     if (!userProfile) {
       return res.status(404).send({ message: "Nothing found" });
     }
@@ -349,7 +349,7 @@ exports.requestHostUsingAadhaar = async (req, res) => {
   }
 };
 //==================================== to know request status ========================================//
-exports.getHostRequest = async (req, res) => {
+exports.getHostRequestStatus = async (req, res) => {
   try {
     const result = await hostFormdb.findOne({ formBy: req.user._id });
     if (result) {
