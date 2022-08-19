@@ -25,6 +25,16 @@ const userProfileSchema = new Schema(
     phone: {
       type: String,
     },
+    blockedHosts: [
+      {
+        type: Schema.Types.ObjectId,
+      },
+    ],
+    blockedBy: [
+      {
+        type: Schema.Types.ObjectId,
+      },
+    ],
   },
   { timestamps: true }
 );
