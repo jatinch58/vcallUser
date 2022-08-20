@@ -9,4 +9,5 @@ router.get("/host/profile", verifyToken, host.showProfile);
 router.put("/host/profile", verifyToken, host.updateProfile);
 router.put("/host/onlineStatus", verifyToken, host.updateOnlineStatus);
 router.post("/host/pictures", verifyToken, upload, host.uploadPictures);
+router.post("/host/blockUser", verifyToken, host.blockUsers);
 module.exports = router;

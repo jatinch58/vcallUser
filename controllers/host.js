@@ -3,6 +3,7 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const hostdb = require("../models/host");
+const userdb = require("../models/profile");
 const refreshTokendb = require("../models/refreshToken");
 const AWS = require("aws-sdk");
 const s3 = new AWS.S3({
@@ -197,3 +198,36 @@ exports.uploadPictures = async (req, res) => {
   }
 };
 //======================================== block users ============================================//
+exports.blockUsers = async (req, res) => {
+  try {
+    const { body } = req;
+    const blockSchema = Joi.object()
+      .keys({
+        userId: Joi.string().hex().length(24),
+      })
+      .required();
+    const result = blockSchema.validate(body);
+    if (result.error) {
+      return res.status(400).send({ message: result.error.details[0].message });
+    }
+    const pushToHosts = await hostdb.findByIdAndUpdate(req.user._id, {
+      $push: { blockedUsers: req.body.userId },
+    });
+    if (!pushToHosts) {
+      return res
+        .status(500)
+        .send({ message: "Somthing bad happened while blocking" });
+    }
+    const pushToUsers = await userdb.findByIdAndUpdate(req.body.userId, {
+      $push: { blockedBy: req.user._id },
+    });
+    if (!pushToUsers) {
+      return res
+        .status(500)
+        .send({ message: "Somthing bad happened while blocking" });
+    }
+    return res.status(200).send({ message: "Blocked successfully" });
+  } catch (e) {
+    return res.status(500).send({ message: "Something bad happened" });
+  }
+};
